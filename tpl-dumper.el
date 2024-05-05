@@ -3,10 +3,10 @@
 ;; Author: Nathan Nichols
 ;; Maintainer: Nathan Nichols
 ;; Version: 1.0
-;; Package-Requires: ((emacs "28.1") (yasnippet))
+;; Package-Requires: ((emacs "28.1") (yasnippet "0.14.0"))
 ;; Package
 ;; Homepage: https://resultsmotivated.com/
-;; Keywords: yasnippet templating
+;; Keywords: yasnippet templating convenience tools
 
 
 ;; This file is not part of GNU Emacs
