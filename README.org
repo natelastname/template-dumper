@@ -1,0 +1,50 @@
+# -*- mode: org -*-
+#+TITLE: tpl-dumper
+#+AUTHOR: nate
+#+DATE: <2024-05-04>
+
+=tpl-dumper= (read: "Template Dumper") is an Emacs package for creating new files from [[https://github.com/joaotavora/yasnippet][yasnippet]] templates.
+
+* Features
+
+- Easily specify file names by providing a function that returns a string.
+  - Use case: Create a file according to a specified naming convention in a particular directory.
+- Maximum flexibility:
+  - Call =(save-buffer)= after =(tpl-dumper-yas-new-file ...)= to create the file
+  - Wrap your function in =save-window-excursion= if you don't want to modify your current window configuration
+
+* Example usage
+
+Here is an example of how to use this package to write a self-contained function to create a file from a Yasnippet template.
+
+#+begin_src emacs-lisp
+
+(use-package tpl-dumper
+  :ensure nil)
+
+;; Creates '/home/nate/myfile' from yas-snippet template 'elisp-default-file'
+(tpl-dumper-yas-new-file "/home/nate/" "elisp-default-file" "myfile")
+
+
+(defun create-dynamically-named-file ()
+  "Demo of dynamically named file creation"
+  (let* ((home (getenv "HOME"))
+         (matching (directory-files home t "tpl-dumper-test\-[0-9]+\.el"))
+         (basename (format "tpl-dumper-test-%s.el" (length matching)))
+         (fullpath (file-name-concat home basename)))
+    (save-window-excursion
+      (tpl-dumper-yas-new-file home "elisp-default-file" basename)
+      (save-buffer)
+      (message (format "Created %s" fullpath))
+      basename)))
+
+;; Creates "$HOME/tpl-dumper-test-0.el" from yasnippet template "elisp-default-file"
+(create-dynamically-named-file)
+;; Creates "$HOME/tpl-dumper-test-1.el" from yasnippet template "elisp-default-file"
+(create-dynamically-named-file)
+;; Creates "$HOME/tpl-dumper-test-2.el" from yasnippet template "elisp-default-file"
+(create-dynamically-named-file)
+;; Creates "$HOME/tpl-dumper-test-3.el" from yasnippet template "elisp-default-file"
+(create-dynamically-named-file)
+
+#+end_src
