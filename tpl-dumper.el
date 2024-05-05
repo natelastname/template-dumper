@@ -31,8 +31,6 @@
 
 ;;; Code:
 
-
-
 ;;; -*- mode: emacs-lisp; -*-
 ;; Created on 2023-12-23T10:33:01-05:00
 ;; @author: nate
@@ -44,11 +42,11 @@
           (declare (ignore prompt))
           (or (find name choices :key display-fn :test #'string=)
               (throw 'notfound nil))))
-    (let ((yas/prompt-functions '(dummy-prompt)))
+    (let ((yas-prompt-functions '(dummy-prompt)))
       (catch 'notfound
-        (yas/insert-snippet t)))))
+        (yas-insert-snippet t)))))
 
-(defun mkdir-p (dirname)
+(defun tpl-dumper-mkdir-p (dirname)
   "Create a directory DIRNAME if one does not exist."
   (if (not (file-exists-p dirname))
       (make-directory dirname t)))
@@ -64,9 +62,9 @@
 (cl-assert (string= (str-or-fn-callback 123) "123"))
 
 (defun tpl-dumper-new-named-file (outdir callback &optional ext)
-  "Create a file `[OUTDIR]/[CALLBACK].[EXT]` where CALLBACK is a
-string or callback function returning a string."
-  (mkdir-p outdir)
+  "Create a file `[OUTDIR]/[CALLBACK].[EXT]`.
+CALLBACK is a string or a function that returns a string."
+  (tpl-dumper-mkdir-p outdir)
   (let* ((ts (str-or-fn-callback callback))
          (fpath (file-name-concat outdir (concat ts ext))))
     (find-file fpath)
