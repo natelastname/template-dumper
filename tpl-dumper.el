@@ -3,7 +3,8 @@
 ;; Author: Nathan Nichols
 ;; Maintainer: Nathan Nichols
 ;; Version: 1.0
-;; Package-Requires: (yasnippet)
+;; Package-Requires: ((emacs "28.1") (yasnippet))
+;; Package
 ;; Homepage: https://resultsmotivated.com/
 ;; Keywords: yasnippet templating
 
@@ -51,21 +52,21 @@
   (if (not (file-exists-p dirname))
       (make-directory dirname t)))
 
-(defun str-or-fn-callback (input)
+(defun tpl-dumper-str-or-fn-callback (input)
   "Evaluate INPUT as a function, or convert to a string."
   (cond ((functionp input) (format "%s" (funcall input)))
         ((stringp input) input)
         (t (format "%s" input))))
 
-(cl-assert (string= (str-or-fn-callback (lambda () "abcdefg")) "abcdefg"))
-(cl-assert (string= (str-or-fn-callback "abcdefg") "abcdefg"))
-(cl-assert (string= (str-or-fn-callback 123) "123"))
+(cl-assert (string= (tpl-dumper-str-or-fn-callback (lambda () "abcdefg")) "abcdefg"))
+(cl-assert (string= (tpl-dumper-str-or-fn-callback "abcdefg") "abcdefg"))
+(cl-assert (string= (tpl-dumper-str-or-fn-callback 123) "123"))
 
 (defun tpl-dumper-new-named-file (outdir callback &optional ext)
   "Create a file `[OUTDIR]/[CALLBACK].[EXT]`.
 CALLBACK is a string or a function that returns a string."
   (tpl-dumper-mkdir-p outdir)
-  (let* ((ts (str-or-fn-callback callback))
+  (let* ((ts (tpl-dumper-str-or-fn-callback callback))
          (fpath (file-name-concat outdir (concat ts ext))))
     (find-file fpath)
     (message fpath)))
