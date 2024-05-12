@@ -48,3 +48,38 @@ Here is an example of how to use this package to write a self-contained function
 (create-dynamically-named-file)
 
 #+end_src
+
+* Template trees
+
+tpl-dumper also supports project templates, subject to the following caveats:
+
+- Missing parent directories are created as needed
+- Files are not overwritten if they already exist
+- May break if the yastemplate assigned to a file is interactive (i.e., the template uses =$1= or other advanced Yasnippet features)
+
+#+begin_src emacs-lisp
+  (setq nate/tpl-python '(dir "./"
+                              ((file "main.py" "python-default-file")
+                               (file "README.org" "org-default-readme")
+                               (file "LICENSE" "license-expat")
+                               (file ".gitignore" "gitignore-default-file"))))
+
+  (setq nate/tpl-html '(dir "./"
+                            ((file "index.html" "html-default-file-1")
+                             (file "README.org" "org-default-readme")
+                             (file "LICENSE" "license-expat")
+                             (file ".gitignore" "gitignore-default-file"))))
+
+  (defun nate/tpl-callback-1 () (interactive) (tpl-dumper-mk-proj-tree-rel nate/tpl-python))
+  (defun nate/tpl-callback-2 () (interactive) (tpl-dumper-mk-proj-tree-rel nate/tpl-html))
+
+  (transient-define-prefix nate/project-template ()
+    "Create org-notepad file or open the most recent"
+    [["This is a transient:"
+      ("1" "Python default project" nate/tpl-callback-1)
+      ("2" "HTML default project" nate/tpl-callback-2)
+      ("q" "exit" transient-noop)
+      ]])
+
+  (define-key (current-global-map) (kbd "C-c <f2>") #'nate/project-template)
+#+end_src
