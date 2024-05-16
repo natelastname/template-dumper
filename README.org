@@ -51,11 +51,15 @@ Here is an example of how to use this package to write a self-contained function
 
 * Template trees
 
-tpl-dumper also supports project templates, subject to the following caveats:
+=tpl-dumper= enables specifying a directory of files that are each initialized from a named Yasnippet template.
+
+This feature is subject to the following caveats:
 
 - Missing parent directories are created as needed
 - Files are not overwritten if they already exist
-- May break if the yastemplate assigned to a file is interactive (i.e., the template uses =$1= or other advanced Yasnippet features)
+- May break if the yas template assigned to a file is interactive (i.e., the template uses =$1, $2, ... $n=) or other advanced Yasnippet features.
+
+Example usage:
 
 #+begin_src emacs-lisp
   (setq nate/tpl-python '(dir "./"
