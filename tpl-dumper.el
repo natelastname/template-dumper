@@ -38,14 +38,12 @@
 
 (defun tpl-dumper-insert-yas-by-name (name)
   "Insert Yas-snippet NAME at point."
-  (cl-flet ((dummy-prompt
-          (prompt choices &optional display-fn)
-          (declare (ignore prompt))
-          (or (find name choices :key display-fn :test #'string=)
-              (throw 'notfound nil))))
-    (let ((yas-prompt-functions '(dummy-prompt)))
-      (catch 'notfound
-        (yas-insert-snippet t)))))
+  (catch 'notfound
+    (let ((yas-prompt-functions
+           (list (lambda (_prompt choices &optional display-fn)
+                   (or (find name choices :key display-fn :test #'string=)
+                       (throw 'notfound nil))))))
+      (yas-insert-snippet t))))
 
 (defun tpl-dumper-mkdir-p (dirname)
   "Create a directory DIRNAME if one does not exist."
