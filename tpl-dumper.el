@@ -41,7 +41,7 @@
   (catch 'notfound
     (let ((yas-prompt-functions
            (list (lambda (_prompt choices &optional display-fn)
-                   (or (find name choices :key display-fn :test #'string=)
+                   (or (cl-find name choices :key display-fn :test #'string=)
                        (throw 'notfound nil))))))
       (yas-insert-snippet t))))
 
@@ -55,10 +55,6 @@
   (cond ((functionp input) (format "%s" (funcall input)))
         ((stringp input) input)
         (t (format "%s" input))))
-
-(cl-assert (string= (tpl-dumper-str-or-fn-callback (lambda () "abcdefg")) "abcdefg"))
-(cl-assert (string= (tpl-dumper-str-or-fn-callback "abcdefg") "abcdefg"))
-(cl-assert (string= (tpl-dumper-str-or-fn-callback 123) "123"))
 
 (defun tpl-dumper-new-named-file (outdir callback &optional ext)
   "Create a file `[OUTDIR]/[CALLBACK].[EXT]`.
@@ -199,6 +195,9 @@ User is prompted for the directory under which the template tree is created."
 ;; ###################################################################
 ;; Extremely basic self-tests
 ;; ###################################################################
+(cl-assert (string= (tpl-dumper-str-or-fn-callback (lambda () "abcdefg")) "abcdefg"))
+(cl-assert (string= (tpl-dumper-str-or-fn-callback "abcdefg") "abcdefg"))
+(cl-assert (string= (tpl-dumper-str-or-fn-callback 123) "123"))
 
 (let ((fspec '(file "README.org" "org-default-readme")))
   (cl-assert (tpl-dumper-is-file-spec fspec)))
