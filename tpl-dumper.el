@@ -3,7 +3,7 @@
 ;; Author: Nathan Nichols
 ;; Maintainer: Nathan Nichols
 ;; Version: 1.0
-;; Package-Requires: ((emacs "28.1") (cl-lib "0.7.1") (yasnippet "0.14.0") (f "0.20.0"))
+;; Package-Requires: ((emacs "28.1") (yasnippet "0.14.0") (f "0.20.0"))
 ;; Package
 ;; Homepage: https://resultsmotivated.com/
 ;; Keywords: yasnippet templating convenience tools
@@ -102,14 +102,12 @@ Return the path of the newly-created file."
 Does not overwrite existing files and creates missing parent
 directories as neccessary."
   (if (f-exists-p file-path)
-      (message
-       (format "[tpl-dumper] File '%s' already exists, skipping..."
-               file-path))
+      (message "[tpl-dumper] File '%s' already exists, skipping..."
+               file-path)
     (progn
-      (message (format
-                "[tpl-dumper] Making file '%s' from template '%s'"
+      (message "[tpl-dumper] Making file '%s' from template '%s'"
                 file-path
-                tpl-name))
+                tpl-name)
       (tpl-dumper-mkdir-p (f-dirname file-path))
       (tpl-dumper-dump-simple file-path tpl-name))))
 
@@ -134,6 +132,44 @@ directories as neccessary."
   (let* ((path-orig (nth 1 file-spec))
         (new-path (f-join basepath path-orig)))
     (cons 'file (cons new-path (cdr (cdr file-spec))))))
+
+;; ###################################################################
+;; cmd-spec
+;; ###################################################################
+
+(defun tpl-dumper-is-cmd-spec (tree)
+  "Whether TREE is a file-spec."
+  (and (listp tree)
+       (eql 'cmd (car tree))
+       (cl-every #'stringp (cdr tree))))
+
+
+(defun tpl-dumper--run-cmd (abs-path cmd)
+  "Run CMD in a subprocess shell from working directory ABS-PATH."
+  (message "[tpl-dumper] %s: %s" abs-path cmd)
+  (tpl-dumper-mkdir-p abs-path)
+  (let* ((default-directory abs-path)
+         (output (with-temp-buffer
+           (with-environment-variables (("DIR" abs-path))
+             (shell-command cmd (current-buffer))
+             (buffer-substring (point-min) (point-max))))))
+    (message output)
+    output))
+
+(defun tpl-dumper-exec-cmd-spec (spec)
+  "Execute cmd-spec SPEC."
+  (let* ((abs-path (nth 1 spec))
+         (cmd (nth 2 spec)))
+    (tpl-dumper--run-cmd abs-path cmd)))
+
+(defun tpl-dumper--mk-rel-cmd (basepath cmd-spec)
+  "Make cmd-spec CMD-SPEC relative to BASEPATH."
+  (let ((with-path (if (eql (length cmd-spec) 2)
+                       (cons 'cmd (cons "./" (cdr cmd-spec)))
+                     cmd-spec)))
+    (let* ((path-orig (nth 1 with-path))
+           (new-path (f-join basepath path-orig)))
+      (cons 'cmd (cons new-path (cdr (cdr with-path)))))))
 
 ;; ###################################################################
 ;; These two functions are not used internally, the struture of a
@@ -168,16 +204,20 @@ followed by a string (the path) and then 0 or more lists."
 SPEC is either a file-spec or a path-spec."
   (cond ((tpl-dumper-is-file-spec spec)
          (tpl-dumper--mk-rel-file basepath spec))
+        ((tpl-dumper-is-cmd-spec spec)
+         (tpl-dumper--mk-rel-cmd basepath spec))
         ((tpl-dumper-is-path-spec spec)
          (tpl-dumper--mk-rel-path basepath spec))
         (t
-         (error "[tpl-dumper] Expected a path-spec or a file-spec"))))
+         (error "[tpl-dumper] Expected a path-spec, cmd-spec or file-spec"))))
 
 (defun tpl-dumper-mk-tree (tree)
   "Create a project from a project template spec TREE."
   (interactive)
   (cond ((tpl-dumper-is-file-spec tree)
          (tpl-dumper-dump-file-spec tree))
+        ((tpl-dumper-is-cmd-spec tree)
+         (tpl-dumper-exec-cmd-spec tree))
         ((tpl-dumper-is-path-spec tree)
          (let* ((basepath (car (cdr tree)))
                 (tree0 (car (cdr (cdr tree)))))
@@ -187,7 +227,7 @@ SPEC is either a file-spec or a path-spec."
              (tpl-dumper-mk-tree
               (tpl-dumper-mk-rel basepath item)))))
         (t
-         (error "[tpl-dumper] Expected a path-spec or a file-spec"))))
+         (error "[tpl-dumper] Expected a path-spec, cmd-spec or file-spec"))))
 
 (defun tpl-dumper-mk-proj-tree-rel (tree)
   "Create project from template tree TREE.
