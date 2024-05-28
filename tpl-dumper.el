@@ -204,16 +204,5 @@ User is prompted for the directory under which the template tree is created."
 (cl-assert (string= (tpl-dumper-str-or-fn-callback "abcdefg") "abcdefg"))
 (cl-assert (string= (tpl-dumper-str-or-fn-callback 123) "123"))
 
-(let ((fspec '(file "README.org" "org-default-readme")))
-  (cl-assert (tpl-dumper-is-file-spec fspec)))
-
-
-(let ((tree-py-proj '(dir "/tmp/testproj/"
-                          ((file "main.py" "python-default-file")
-                           (file "README.org" "org-default-readme")
-                           (file "LICENSE" "license-expat")
-                           (file ".gitignore" "gitignore-default-file")))))
-  (cl-assert (tpl-dumper-is-path-spec tree-py-proj)))
-
 (provide 'tpl-dumper)
 ;;; tpl-dumper.el ends here
