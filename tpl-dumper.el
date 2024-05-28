@@ -3,7 +3,7 @@
 ;; Author: Nathan Nichols
 ;; Maintainer: Nathan Nichols
 ;; Version: 1.0
-;; Package-Requires: ((emacs "24.1") (cl-lib "0.7.1") (yasnippet "0.14.0") (f "0.20.0"))
+;; Package-Requires: ((emacs "28.1") (cl-lib "0.7.1") (yasnippet "0.14.0") (f "0.20.0"))
 ;; Package
 ;; Homepage: https://resultsmotivated.com/
 ;; Keywords: yasnippet templating convenience tools
@@ -35,6 +35,11 @@
 ;;; -*- mode: emacs-lisp; -*-
 ;; Created on 2023-12-23T10:33:01-05:00
 ;; @author: nate
+
+(require 'emacs)
+(require 'cl-lib)
+(require 'yasnippet)
+(require 'f)
 
 (defun tpl-dumper-insert-yas-by-name (name)
   "Insert Yas-snippet NAME at point."
