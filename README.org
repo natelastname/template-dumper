@@ -62,28 +62,32 @@ This feature is subject to the following caveats:
 Example usage:
 
 #+begin_src emacs-lisp
-  (setq nate/tpl-python '(dir "./"
-                              ((file "main.py" "python-default-file")
-                               (file "README.org" "org-default-readme")
-                               (file "LICENSE" "license-expat")
-                               (file ".gitignore" "gitignore-default-file"))))
-
-  (setq nate/tpl-html '(dir "./"
-                            ((file "index.html" "html-default-file-1")
+(setq nate/tpl-python '(dir "./"
+                            ((file "main.py" "python-default-file")
                              (file "README.org" "org-default-readme")
                              (file "LICENSE" "license-expat")
-                             (file ".gitignore" "gitignore-default-file"))))
+                             (file ".gitignore" "gitignore-default-file")
+                             (cmd "chmod +x \"$DIR/main.py\"")
+                             (cmd "git init \"$DIR\"")
+                             (cmd "git add \"$DIR\"")
+                             (cmd "git commit -m \"initial\""))))
 
-  (defun nate/tpl-callback-1 () (interactive) (tpl-dumper-mk-proj-tree-rel nate/tpl-python))
-  (defun nate/tpl-callback-2 () (interactive) (tpl-dumper-mk-proj-tree-rel nate/tpl-html))
+(setq nate/tpl-html '(dir "./"
+                          ((file "index.html" "html-default-file-1")
+                           (file "README.org" "org-default-readme")
+                           (file "LICENSE" "license-expat")
+                           (file ".gitignore" "gitignore-default-file"))))
 
-  (transient-define-prefix nate/project-template ()
-    "Create org-notepad file or open the most recent"
-    [["This is a transient:"
-      ("1" "Python default project" nate/tpl-callback-1)
-      ("2" "HTML default project" nate/tpl-callback-2)
-      ("q" "exit" transient-noop)
-      ]])
+(defun nate/tpl-callback-1 () (interactive) (tpl-dumper-mk-proj-tree-rel nate/tpl-python))
+(defun nate/tpl-callback-2 () (interactive) (tpl-dumper-mk-proj-tree-rel nate/tpl-html))
 
-  (define-key (current-global-map) (kbd "C-c <f2>") #'nate/project-template)
+(transient-define-prefix nate/project-template ()
+  "Create org-notepad file or open the most recent"
+  [["This is a transient:"
+    ("1" "Python default project" nate/tpl-callback-1)
+    ("2" "HTML default project" nate/tpl-callback-2)
+    ("q" "exit" transient-noop)
+    ]])
+
+(define-key (current-global-map) (kbd "C-c <f2>") #'nate/project-template)
 #+end_src
