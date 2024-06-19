@@ -9,7 +9,7 @@ DIR=`dirname "$(readlink -f "$0")"`
 # Change this to wherever Melpazoid is cloned
 cd "/home/nate/melpazoid/"
 
-export RECIPE='(tpl-dumper :fetcher github :repo "natelastname/tpl-dumper")'
+export RECIPE='(template-dumper :fetcher github :repo "natelastname/template-dumper")'
 export LOCAL_REPO="$DIR"
 make
 
