@@ -1,4 +1,4 @@
-;;; tpl-dumper.el --- Create files from yasnippet templates -*- lexical-binding: t -*-
+;;; template-dumper.el --- Create files from yasnippet templates -*- lexical-binding: t -*-
 
 ;; Author: Nathan Nichols
 ;; Maintainer: Nathan Nichols
@@ -41,7 +41,7 @@
 (require 'yasnippet)
 (require 'f)
 
-(defun tpl-dumper-insert-yas-by-name (name)
+(defun template-dumper-insert-yas-by-name (name)
   "Insert Yas-snippet NAME at point."
   (catch 'notfound
     (let ((yas-prompt-functions
@@ -50,27 +50,27 @@
                        (throw 'notfound nil))))))
       (yas-insert-snippet t))))
 
-(defun tpl-dumper-mkdir-p (dirname)
+(defun template-dumper-mkdir-p (dirname)
   "Create a directory DIRNAME if one does not exist."
   (if (not (file-exists-p dirname))
       (make-directory dirname t)))
 
-(defun tpl-dumper-str-or-fn-callback (input)
+(defun template-dumper-str-or-fn-callback (input)
   "Evaluate INPUT as a function, or convert to a string."
   (cond ((functionp input) (format "%s" (funcall input)))
         ((stringp input) input)
         (t (format "%s" input))))
 
-(defun tpl-dumper-new-named-file (outdir callback &optional ext)
+(defun template-dumper-new-named-file (outdir callback &optional ext)
   "Create a file `[OUTDIR]/[CALLBACK].[EXT]`.
 CALLBACK is a string or a function that returns a string."
-  (tpl-dumper-mkdir-p outdir)
-  (let* ((ts (tpl-dumper-str-or-fn-callback callback))
+  (template-dumper-mkdir-p outdir)
+  (let* ((ts (template-dumper-str-or-fn-callback callback))
          (fpath (f-join outdir (concat ts ext))))
     (find-file fpath)
     (message fpath)))
 
-(defun tpl-dumper-yas-new-file (basedir yas-tpl name-callback &optional ext)
+(defun template-dumper-yas-new-file (basedir yas-tpl name-callback &optional ext)
   "Create a file with extension EXT from yas-snippet YAS-TPL in BASEDIR.
 Return the path of the newly-created file."
   (let* ((with-dot (cond
@@ -78,8 +78,8 @@ Return the path of the newly-created file."
                     ((equal (length ext) 0) "")
                     ((equal (substring ext 0 1) ".") ext)
                          (t (concat "." ext))))
-         (new-file (tpl-dumper-new-named-file basedir name-callback with-dot)))
-    (tpl-dumper-insert-yas-by-name yas-tpl)
+         (new-file (template-dumper-new-named-file basedir name-callback with-dot)))
+    (template-dumper-insert-yas-by-name yas-tpl)
     new-file))
 
 
@@ -87,47 +87,47 @@ Return the path of the newly-created file."
 ;; Functionality for creating projects from templates
 ;; ###################################################################
 
-(defun tpl-dumper-dump-simple (file-path tpl-name)
+(defun template-dumper-dump-simple (file-path tpl-name)
   "Create file FILE-PATH from yas template TPL-NAME."
   (let ((file-contents
          (with-temp-buffer
            (yas-minor-mode 1)
-           (tpl-dumper-insert-yas-by-name tpl-name)
+           (template-dumper-insert-yas-by-name tpl-name)
            (buffer-substring-no-properties (point-min) (point-max)))))
     (f-write-text file-contents 'utf-8 file-path)))
 
 
-(defun tpl-dumper-mk-file-tpl (file-path tpl-name)
+(defun template-dumper-mk-file-tpl (file-path tpl-name)
   "Create file FILE-PATH from Yasnippet template TPL-NAME.
 Does not overwrite existing files and creates missing parent
 directories as neccessary."
   (if (f-exists-p file-path)
-      (message "[tpl-dumper] File '%s' already exists, skipping..."
+      (message "[template-dumper] File '%s' already exists, skipping..."
                file-path)
     (progn
-      (message "[tpl-dumper] Making file '%s' from template '%s'"
+      (message "[template-dumper] Making file '%s' from template '%s'"
                 file-path
                 tpl-name)
-      (tpl-dumper-mkdir-p (f-dirname file-path))
-      (tpl-dumper-dump-simple file-path tpl-name))))
+      (template-dumper-mkdir-p (f-dirname file-path))
+      (template-dumper-dump-simple file-path tpl-name))))
 
 ;; ###################################################################
 ;; These functions determine the metadata/structure of a file-spec.
 ;; ###################################################################
 
-(defun tpl-dumper-is-file-spec (tree)
+(defun template-dumper-is-file-spec (tree)
   "Whether TREE is a file-spec."
   (and (listp tree)
        (eql 'file (car tree))
        (cl-every #'stringp (cdr tree))))
 
-(defun tpl-dumper-dump-file-spec (spec)
+(defun template-dumper-dump-file-spec (spec)
   "Create a file from a file-spec SPEC."
   (let* ((abs-path (nth 1 spec))
          (tpl-name (nth 2 spec)))
-    (tpl-dumper-mk-file-tpl abs-path tpl-name)))
+    (template-dumper-mk-file-tpl abs-path tpl-name)))
 
-(defun tpl-dumper--mk-rel-file (basepath file-spec)
+(defun template-dumper--mk-rel-file (basepath file-spec)
   "Make file-spec FILE-SPEC relative to BASEPATH."
   (let* ((path-orig (nth 1 file-spec))
         (new-path (f-join basepath path-orig)))
@@ -137,17 +137,17 @@ directories as neccessary."
 ;; cmd-spec
 ;; ###################################################################
 
-(defun tpl-dumper-is-cmd-spec (tree)
+(defun template-dumper-is-cmd-spec (tree)
   "Whether TREE is a file-spec."
   (and (listp tree)
        (eql 'cmd (car tree))
        (cl-every #'stringp (cdr tree))))
 
 
-(defun tpl-dumper--run-cmd (abs-path cmd)
+(defun template-dumper--run-cmd (abs-path cmd)
   "Run CMD in a subprocess shell from working directory ABS-PATH."
-  (message "[tpl-dumper] %s: %s" abs-path cmd)
-  (tpl-dumper-mkdir-p abs-path)
+  (message "[template-dumper] %s: %s" abs-path cmd)
+  (template-dumper-mkdir-p abs-path)
   (let* ((default-directory abs-path)
          (output (with-temp-buffer
            (with-environment-variables (("DIR" abs-path))
@@ -156,13 +156,13 @@ directories as neccessary."
     (message output)
     output))
 
-(defun tpl-dumper-exec-cmd-spec (spec)
+(defun template-dumper-exec-cmd-spec (spec)
   "Execute cmd-spec SPEC."
   (let* ((abs-path (nth 1 spec))
          (cmd (nth 2 spec)))
-    (tpl-dumper--run-cmd abs-path cmd)))
+    (template-dumper--run-cmd abs-path cmd)))
 
-(defun tpl-dumper--mk-rel-cmd (basepath cmd-spec)
+(defun template-dumper--mk-rel-cmd (basepath cmd-spec)
   "Make cmd-spec CMD-SPEC relative to BASEPATH."
   (let ((with-path (if (eql (length cmd-spec) 2)
                        (cons 'cmd (cons "./" (cdr cmd-spec)))
@@ -173,10 +173,10 @@ directories as neccessary."
 
 ;; ###################################################################
 ;; These two functions are not used internally, the struture of a
-;; path-spec is determined by `tpl-dumper-mk-tree'.
+;; path-spec is determined by `template-dumper-mk-tree'.
 ;; ###################################################################
 
-(defun tpl-dumper-is-path-spec (tree)
+(defun template-dumper-is-path-spec (tree)
   "Whether TREE is a path-spec.
 A directory spec is a list starting with the symbol `dir'
 followed by a string (the path) and then 0 or more lists."
@@ -185,13 +185,13 @@ followed by a string (the path) and then 0 or more lists."
        (stringp (car (cdr tree)))
        (cl-every #'listp (cdr (cdr tree)))))
 
-(defun tpl-dumper-dump-path-spec (spec)
+(defun template-dumper-dump-path-spec (spec)
   "Create a directory from a path-spec SPEC."
   (let* ((abs-path (nth 1 spec))
          (tpl-name (nth 2 spec)))
-    (tpl-dumper-mk-file-tpl abs-path tpl-name)))
+    (template-dumper-mk-file-tpl abs-path tpl-name)))
 
-(defun tpl-dumper--mk-rel-path (basepath path-spec)
+(defun template-dumper--mk-rel-path (basepath path-spec)
   "Make path-spec PATH-SPEC relative to BASEPATH."
   (let* ((path-orig (car (cdr path-spec)))
         (new-path (f-join basepath path-orig)))
@@ -199,50 +199,50 @@ followed by a string (the path) and then 0 or more lists."
 
 ;; ###################################################################
 
-(defun tpl-dumper-mk-rel (basepath spec)
+(defun template-dumper-mk-rel (basepath spec)
   "Make SPEC relative to BASEPATH.
 SPEC is either a file-spec or a path-spec."
-  (cond ((tpl-dumper-is-file-spec spec)
-         (tpl-dumper--mk-rel-file basepath spec))
-        ((tpl-dumper-is-cmd-spec spec)
-         (tpl-dumper--mk-rel-cmd basepath spec))
-        ((tpl-dumper-is-path-spec spec)
-         (tpl-dumper--mk-rel-path basepath spec))
+  (cond ((template-dumper-is-file-spec spec)
+         (template-dumper--mk-rel-file basepath spec))
+        ((template-dumper-is-cmd-spec spec)
+         (template-dumper--mk-rel-cmd basepath spec))
+        ((template-dumper-is-path-spec spec)
+         (template-dumper--mk-rel-path basepath spec))
         (t
-         (error "[tpl-dumper] Expected a path-spec, cmd-spec or file-spec"))))
+         (error "[template-dumper] Expected a path-spec, cmd-spec or file-spec"))))
 
-(defun tpl-dumper-mk-tree (tree)
+(defun template-dumper-mk-tree (tree)
   "Create a project from a project template spec TREE."
   (interactive)
-  (cond ((tpl-dumper-is-file-spec tree)
-         (tpl-dumper-dump-file-spec tree))
-        ((tpl-dumper-is-cmd-spec tree)
-         (tpl-dumper-exec-cmd-spec tree))
-        ((tpl-dumper-is-path-spec tree)
+  (cond ((template-dumper-is-file-spec tree)
+         (template-dumper-dump-file-spec tree))
+        ((template-dumper-is-cmd-spec tree)
+         (template-dumper-exec-cmd-spec tree))
+        ((template-dumper-is-path-spec tree)
          (let* ((basepath (car (cdr tree)))
                 (tree0 (car (cdr (cdr tree)))))
            (dolist (item tree0)
              ;; Update any paths to be relative to `basepath' then
              ;; recurse on each directory item
-             (tpl-dumper-mk-tree
-              (tpl-dumper-mk-rel basepath item)))))
+             (template-dumper-mk-tree
+              (template-dumper-mk-rel basepath item)))))
         (t
-         (error "[tpl-dumper] Expected a path-spec, cmd-spec or file-spec"))))
+         (error "[template-dumper] Expected a path-spec, cmd-spec or file-spec"))))
 
-(defun tpl-dumper-mk-proj-tree-rel (tree)
+(defun template-dumper-mk-proj-tree-rel (tree)
   "Create project from template tree TREE.
 User is prompted for the directory under which the template tree is created."
   (interactive)
   (let* ((path (read-directory-name "Enter directory:"))
-         (tree-rel (tpl-dumper-mk-rel path tree)))
-    (tpl-dumper-mk-tree tree-rel)))
+         (tree-rel (template-dumper-mk-rel path tree)))
+    (template-dumper-mk-tree tree-rel)))
 
 ;; ###################################################################
 ;; Extremely basic self-tests
 ;; ###################################################################
-(cl-assert (string= (tpl-dumper-str-or-fn-callback (lambda () "abcdefg")) "abcdefg"))
-(cl-assert (string= (tpl-dumper-str-or-fn-callback "abcdefg") "abcdefg"))
-(cl-assert (string= (tpl-dumper-str-or-fn-callback 123) "123"))
+(cl-assert (string= (template-dumper-str-or-fn-callback (lambda () "abcdefg")) "abcdefg"))
+(cl-assert (string= (template-dumper-str-or-fn-callback "abcdefg") "abcdefg"))
+(cl-assert (string= (template-dumper-str-or-fn-callback 123) "123"))
 
-(provide 'tpl-dumper)
-;;; tpl-dumper.el ends here
+(provide 'template-dumper)
+;;; template-dumper.el ends here
