@@ -36,7 +36,6 @@
 ;; Created on 2023-12-23T10:33:01-05:00
 ;; @author: nate
 
-(require 'emacs)
 (require 'cl-lib)
 (require 'yasnippet)
 (require 'f)
