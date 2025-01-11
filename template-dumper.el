@@ -3,7 +3,7 @@
 ;; Author: Nathan Nichols
 ;; Maintainer: Nathan Nichols
 ;; Version: 1.0
-;; Package-Requires: ((emacs "28.1") (yasnippet "0.14.0") (f "0.20.0"))
+;; Package-Requires: ((emacs "28.1") (yasnippet "0.14.0") (f "0.20.0") (templatel "20210902.228"))
 ;; Package
 ;; Homepage: https://resultsmotivated.com/
 ;; Keywords: yasnippet templating convenience tools
@@ -39,6 +39,7 @@
 (require 'cl-lib)
 (require 'yasnippet)
 (require 'f)
+(require 'templatel)
 
 (defun template-dumper-insert-yas-by-name (name)
   "Insert Yas-snippet NAME at point."
@@ -237,11 +238,82 @@ User is prompted for the directory under which the template tree is created."
     (template-dumper-mk-tree tree-rel)))
 
 ;; ###################################################################
+;; Templatel integration
+;; ###################################################################
+
+(defun template-dumper--preproc-str (elt variables)
+  (cond ((stringp elt) (templatel-render-string elt variables))
+        ((listp elt) (template-dumper-bfs elt variables))
+        (t elt)))
+
+(defun template-dumper--add-or-append (list0 list1)
+  (cond ((listp list1) (append list0 `(,list1)))
+        (t (append list0 (list list1)))))
+
+(defun template-dumper-bfs (tree_in variables)
+  "Traverse TREE_IN and render each leaf node as a template.
+TREE_IN is an s-expression.  VARIABLES is a list of templatel
+variables."
+  (let ((tree_out ()))
+    (dolist (elt tree_in tree_out)
+      (let ((new_elt (template-dumper--preproc-str elt variables))
+            )
+        (setq tree_out (template-dumper--add-or-append tree_out new_elt))
+        ))
+    tree_out))
+
+(defun template-dumper--do-prompt (prompt some-keyseq)
+  (let ((keymap (copy-keymap minibuffer-local-map)))
+    (define-key keymap (kbd "RET") 'newline)
+    (define-key keymap some-keyseq 'exit-minibuffer)
+    (read-from-minibuffer prompt nil keymap)))
+
+(defun template-dumper--prompt-vars (varlist)
+  (interactive)
+  (let (
+        (format_str "Enter value for '%s':")
+        (submit_key (kbd "C-s"))
+        (vars_out ()))
+    (dolist (elt varlist vars_out)
+      (if (not (symbolp elt))
+          (error "Expected a symbol."))
+      (setq vars_out
+            (template-dumper--add-or-append
+             vars_out
+             `(,(format "%s" elt) .
+               ,(template-dumper--do-prompt (format format_str elt) submit_key))
+             )))))
+
+(defun template-dumper--prompt-sub (varlist in_tree)
+  (interactive)
+  (let ((vars (template-dumper--prompt-vars varlist)))
+    (template-dumper-bfs in_tree vars)))
+
+
+;; ###################################################################
 ;; Extremely basic self-tests
 ;; ###################################################################
 (cl-assert (string= (template-dumper-str-or-fn-callback (lambda () "abcdefg")) "abcdefg"))
 (cl-assert (string= (template-dumper-str-or-fn-callback "abcdefg") "abcdefg"))
 (cl-assert (string= (template-dumper-str-or-fn-callback 123) "123"))
+(cl-assert (equal (template-dumper-bfs '("{{ var0 }}" 13 1 "123ASDF") '(("var0" . "[VAR0]"))) '("[VAR0]" 13 1 "123ASDF")))
+;; Verify that the list doesn't get modified when no substitution is made
+(let ((tpl '(dir "./"
+                 (file "run0.py" "python-default-script-fued")
+                 (cmd "chmod +x ./run0.py")
+                 (dir "module0" ((file "pyproject.toml" "python-pyproject-toml")
+                                 (file "tox.ini" "tox-ini-default")
+                                 (file "README.md" "org-default-readme")
+                                 (file "LICENSE" "license-expat")
+                                 (file ".gitignore" "gitignore-default-file")
+                                 (dir "src" ((dir "module0" ((file "__init__.py" "python-default-init-file")
+                                                             (file "util.py" "python-util0")))))
+                                 (dir "tests" ((file "test_util.py" "python-test-util0")))
+                                 (cmd "git init \"$DIR\"")
+                                 (cmd "git add \"$DIR\"")
+                                 (cmd "git commit -m \"initial\""))))))
+  (cl-assert (equal (template-dumper-bfs tpl '(("var0" . "[VAR0]"))) tpl)))
+
 
 (provide 'template-dumper)
 ;;; template-dumper.el ends here
