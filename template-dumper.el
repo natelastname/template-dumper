@@ -82,22 +82,21 @@ Return the path of the newly-created file."
     (template-dumper-insert-yas-by-name yas-tpl)
     new-file))
 
-
 ;; ###################################################################
 ;; Functionality for creating projects from templates
 ;; ###################################################################
 
-(defun template-dumper-dump-simple (file-path tpl-name)
+(defun template-dumper-dump-simple (file-path tpl-name &optional templatel_vars)
   "Create file FILE-PATH from yas template TPL-NAME."
-  (let ((file-contents
-         (with-temp-buffer
-           (yas-minor-mode 1)
-           (template-dumper-insert-yas-by-name tpl-name)
-           (buffer-substring-no-properties (point-min) (point-max)))))
+  (let* ((file-contents
+          (with-temp-buffer
+            (yas-minor-mode 1)
+            (template-dumper-insert-yas-by-name tpl-name)
+            (buffer-substring-no-properties (point-min) (point-max))))
+         (file-contents (templatel-render-string file-contents templatel_vars)))
     (f-write-text file-contents 'utf-8 file-path)))
 
-
-(defun template-dumper-mk-file-tpl (file-path tpl-name)
+(defun template-dumper-mk-file-tpl (file-path tpl-name &optional templatel_vars)
   "Create file FILE-PATH from Yasnippet template TPL-NAME.
 Does not overwrite existing files and creates missing parent
 directories as neccessary."
@@ -109,7 +108,7 @@ directories as neccessary."
                 file-path
                 tpl-name)
       (template-dumper-mkdir-p (f-dirname file-path))
-      (template-dumper-dump-simple file-path tpl-name))))
+      (template-dumper-dump-simple file-path tpl-name templatel_vars))))
 
 ;; ###################################################################
 ;; These functions determine the metadata/structure of a file-spec.
@@ -121,11 +120,11 @@ directories as neccessary."
        (eql 'file (car tree))
        (cl-every #'stringp (cdr tree))))
 
-(defun template-dumper-dump-file-spec (spec)
+(defun template-dumper-dump-file-spec (spec &optional templatel_vars)
   "Create a file from a file-spec SPEC."
   (let* ((abs-path (nth 1 spec))
          (tpl-name (nth 2 spec)))
-    (template-dumper-mk-file-tpl abs-path tpl-name)))
+    (template-dumper-mk-file-tpl abs-path tpl-name templatel_vars)))
 
 (defun template-dumper--mk-rel-file (basepath file-spec)
   "Make file-spec FILE-SPEC relative to BASEPATH."
@@ -143,7 +142,6 @@ directories as neccessary."
        (eql 'cmd (car tree))
        (cl-every #'stringp (cdr tree))))
 
-
 (defun template-dumper--run-cmd (abs-path cmd)
   "Run CMD in a subprocess shell from working directory ABS-PATH."
   (message "[template-dumper] %s: %s" abs-path cmd)
@@ -156,7 +154,7 @@ directories as neccessary."
     (message output)
     output))
 
-(defun template-dumper-exec-cmd-spec (spec)
+(defun template-dumper-exec-cmd-spec (spec &optional templatel_vars)
   "Execute cmd-spec SPEC."
   (let* ((abs-path (nth 1 spec))
          (cmd (nth 2 spec)))
@@ -211,11 +209,11 @@ SPEC is either a file-spec or a path-spec."
         (t
          (error "[template-dumper] Expected a path-spec, cmd-spec or file-spec"))))
 
-(defun template-dumper-mk-tree (tree)
+(defun template-dumper-mk-tree (tree &optional templatel_vars)
   "Create a project from a project template spec TREE."
   (interactive)
   (cond ((template-dumper-is-file-spec tree)
-         (template-dumper-dump-file-spec tree))
+         (template-dumper-dump-file-spec tree templatel_vars))
         ((template-dumper-is-cmd-spec tree)
          (template-dumper-exec-cmd-spec tree))
         ((template-dumper-is-path-spec tree)
@@ -224,18 +222,18 @@ SPEC is either a file-spec or a path-spec."
            (dolist (item tree0)
              ;; Update any paths to be relative to `basepath' then
              ;; recurse on each directory item
-             (template-dumper-mk-tree
-              (template-dumper-mk-rel basepath item)))))
+             (template-dumper-mk-tree (template-dumper-mk-rel basepath item) templatel_vars)
+              )))
         (t
          (error "[template-dumper] Expected a path-spec, cmd-spec or file-spec"))))
 
-(defun template-dumper-mk-proj-tree-rel (tree)
+(defun template-dumper-mk-proj-tree-rel (tree &optional templatel_vars)
   "Create project from template tree TREE.
 User is prompted for the directory under which the template tree is created."
   (interactive)
   (let* ((path (read-directory-name "Enter directory:"))
          (tree-rel (template-dumper-mk-rel path tree)))
-    (template-dumper-mk-tree tree-rel)))
+    (template-dumper-mk-tree tree-rel templatel_vars)))
 
 ;; ###################################################################
 ;; Templatel integration
@@ -271,7 +269,7 @@ variables."
 (defun template-dumper--prompt-vars (varlist)
   (interactive)
   (let (
-        (format_str "Enter value for '%s':")
+        (format_str "[C-s to submit] '%s':")
         (submit_key (kbd "C-s"))
         (vars_out ()))
     (dolist (elt varlist vars_out)
@@ -288,6 +286,15 @@ variables."
   (interactive)
   (let ((vars (template-dumper--prompt-vars varlist)))
     (template-dumper-bfs in_tree vars)))
+
+(defun template-dumper-prompt-render (tpl varlist)
+  "Render a template after prompting for templatel variables.
+TPL is a template-dumper template and VARLIST is a (possibly
+empty) list of symbols (Example:`'(var1 var2 var3)` or `'()`)."
+  (interactive)
+  (let* ((templatel_vars (template-dumper--prompt-vars varlist))
+         (tpl2 (template-dumper-bfs tpl templatel_vars)))
+    (template-dumper-mk-proj-tree-rel tpl2 templatel_vars)))
 
 
 ;; ###################################################################
